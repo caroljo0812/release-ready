@@ -1,0 +1,59 @@
+diff --git a/src/api.py b/src/api.py
+index 1234567..abcdef1 100644
+--- a/src/api.py
++++ b/src/api.py
+@@ -1,10 +1,12 @@
+-import httpx
+ from fastapi import FastAPI
++import httpx
++from pydantic import BaseModel
+
+ app = FastAPI()
+
++class DeployRequest(BaseModel):
++    target: str
++    image: str | None = None
+
+ @app.post("/deploy")
+-def deploy(payload: dict):
+-    return {"status": "ok", "id": 1234}
++def deploy(payload: DeployRequest):
++    return {"status": "ok", "id": 5678, "target": payload.target}
+
+ @app.get("/health")
+ def health():
+     return {"status": "ok"}
+diff --git a/src/worker.py b/src/worker.py
+index 9876543..fedcba9 100644
+--- a/src/worker.py
++++ b/src/worker.py
+@@ -5,6 +5,7 @@
+ import asyncio
+ import logging
+ from datetime import datetime
+
++SCHEDULE_INTERVAL = 60  # seconds
+
+ async def process_queue():
+     while True:
+         item = await queue.get()
+         logging.info(f"Processing: {item}")
+         await process(item)
+-        await asyncio.sleep(5)
++        await asyncio.sleep(SCHEDULE_INTERVAL)
+
+ async def process(item):
+     logging.info(f"Processed: {item}")
+diff --git a/setup.py b/setup.py
+index abc1234..def5678 100644
+--- a/setup.py
++++ b/setup.py
+@@ -10,7 +10,8 @@
+     install_requires=[
+         "fastapi>=0.110",
+-        "httpx>=0.27",
++        "httpx>=0.27,<1.0",
+         "pydantic>=2.0",
++        "redis>=5.0",
+     ],
+ )

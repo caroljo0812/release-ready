@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "release-ready"
+version = "0.1.0"
+description = "Multi-agent PR release readiness squad. Four specialists run in parallel, one consensus verdict."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Carol Johnson", email = "caroljo0812@gmail.com" }
+]
+keywords = ["ai", "cli", "github", "llm", "multi-agent", "python", "release", "review"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "click>=8.1",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+release-ready = "release_ready.cli:main"
+release-ready-server = "release_ready.server:main"
+
+[project.urls]
+Homepage = "https://github.com/caroljo0812/release-ready"
+Documentation = "https://github.com/caroljo0812/release-ready#readme"
+Repository = "https://github.com/caroljo0812/release-ready"
+Issues = "https://github.com/caroljo0812/release-ready/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/release_ready"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "tests/", "examples/"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests/"]
+python_files = ["test_*.py"]
