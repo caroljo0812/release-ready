@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -111,8 +111,22 @@ def chat(
     temperature: float = 0.3,
     json_mode: bool = False,
 ) -> LLMResponse:
+    # Short-circuit mock provider — no HTTP needed
+    effective = provider if provider in LLM_MAPPING else ("mock" if provider == "mock" else "custom")
+    if effective == "mock":
+        return LLMResponse(
+            content="",
+            usage=Usage(prompt_tokens=0, completion_tokens=0),
+            provider_info={
+                "configured_provider": provider,
+                "configured_model": model,
+                "effective_provider": "mock",
+                "base_url": None,
+            },
+            raw={},
+        )
+
     client = _client(provider, api_key, base_url)
-    effective = provider if provider in LLM_MAPPING else "custom"
 
     payload: dict[str, Any] = {
         "model": model,

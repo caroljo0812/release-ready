@@ -1,8 +1,6 @@
 """Parallel fan-out to specialists + report rendering."""
 from __future__ import annotations
 
-import asyncio
-import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -11,8 +9,7 @@ from typing import Any
 
 from release_ready.diff import DiffFile
 from release_ready.llm import Usage
-from release_ready.orchestrator import _thread_runner, render_for_specialist
-from release_ready.specialists import Finding, SPECIALISTS, run_specialist
+from release_ready.specialists import SPECIALISTS, Finding, run_specialist
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +45,7 @@ def review_diff(
     max_tokens: int = 800,
 ) -> ReviewResult:
     from release_ready.consensus import dedup_findings, write_report
-    from release_ready.diff import parse_diff
+    from release_ready.diff import parse_diff, render_for_specialist
 
     files = parse_diff(diff_text)
     diff_for_llm = render_for_specialist(files)
@@ -110,7 +107,7 @@ def review_diff(
         provider={
             "configured_provider": provider,
             "configured_model": model,
-            "effective_provider": provider if provider in ("mimo","openai","together") else "custom",
+            "effective_provider": provider if provider in ("mimo","openai","together","mock") else "custom",
         },
         specialists=[
             {"name": s.name, "findings": len(s.findings), "duration_ms": s.duration_ms, "error": s.error}
@@ -145,11 +142,11 @@ def render_text(result: ReviewResult) -> str:
 
 
 def render_markdown(result: ReviewResult) -> str:
-    lines = [f"## Release Readiness Report\n"]
+    lines = ["## Release Readiness Report\n"]
     lines.append(f"_{result.file_count} files, {result.finding_count} findings, {result.duration_ms}ms_\n")
     lines.append("### Specialists\n")
     for s in result.specialists:
-        err = f" — ERROR" if s["error"] else f" — {s['findings']} findings"
+        err = " — ERROR" if s["error"] else f" — {s['findings']} findings"
         lines.append(f"- **{s['name']}**{err}")
     lines.append("\n" + result.report)
     return "\n".join(lines)

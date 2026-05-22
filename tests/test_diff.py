@@ -1,7 +1,5 @@
 """Test the diff parser."""
-import pytest
-from release_ready.diff import parse_diff, DiffFile
-
+from release_ready.diff import parse_diff
 
 SIMPLE_DIFF = """--- a/src/api.py
 +++ b/src/api.py

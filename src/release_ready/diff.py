@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Iterator
 
 
 @dataclass
@@ -54,31 +53,36 @@ def parse_diff(text: str) -> list[DiffFile]:
     """Parse a unified diff into structured DiffFile objects."""
     files: list[DiffFile] = []
     current: DiffFile | None = None
+    pending_file: str = ""
+    pending_after_file: str = ""
     hunk_lines: list[tuple[str, str, int]] = []
     hunk_context_start = 0
-    hunk_context_end = 0
     pending_before_range: tuple[int, int] | None = None
     pending_after_range:  tuple[int, int] | None = None
-    pending_before_file: str = ""
-    pending_after_file: str = ""
 
     def _commit_hunk():
-        nonlocal current, hunk_lines, hunk_context_start, hunk_context_end
-        if not current:
+        nonlocal current, hunk_lines, hunk_context_start
+        nonlocal pending_before_range, pending_after_range
+        if not current or not hunk_lines:
+            hunk_lines = []
+            hunk_context_start = 0
+            pending_before_range = None
+            pending_after_range = None
             return
+        _br = pending_before_range
+        _ar = pending_after_range
         hunk = Hunk(
             file_before=current.path_before,
             file_after=current.path_after,
-            hunks_before=[pending_before_range] if pending_before_range else [],
-            hunks_after=[pending_after_range] if pending_after_range else [],
+            hunks_before=[_br] if _br else [],
+            hunks_after=[_ar] if _ar else [],
             lines=list(hunk_lines),
             context_start=hunk_context_start,
-            context_end=hunk_context_end,
+            context_end=hunk_context_start + len(hunk_lines),
         )
         current.hunks.append(hunk)
         hunk_lines = []
         hunk_context_start = 0
-        hunk_context_end = 0
         pending_before_range = None
         pending_after_range = None
 
@@ -86,41 +90,42 @@ def parse_diff(text: str) -> list[DiffFile]:
         m = re.match(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
         if not m:
             return 1, 1
-        b_start = int(m.group(1))
-        b_count = int(m.group(2) or 1)
-        a_start = int(m.group(3))
-        a_count = int(m.group(4) or 1)
-        return b_start, a_start
+        return int(m.group(1)), int(m.group(3))
 
     for raw_line in text.splitlines():
         line = raw_line.rstrip("\n")
 
-        # File header
+        # File header: ---
         m = re.match(r"^--- (?:a/)?(.+)", line)
         if m:
-            if current:
-                _commit_hunk()
+            _commit_hunk()
+            if current and not current.path_after:
+                current.path_after = pending_after_file
+            if current and current.hunks:
                 files.append(current)
-            pending_before_file = m.group(1).strip()
-            pending_before_range = None
+            pending_file = m.group(1).strip()
             pending_after_file = ""
-            current = DiffFile(path_before=pending_before_file, path_after="")
+            current = DiffFile(path_before=pending_file, path_after="")
+            pending_before_range = None
+            pending_after_range = None
             hunk_lines = []
             continue
 
+        # File header: +++
         m = re.match(r"^\+\+\+ (?:b/)?(.+)", line)
         if m:
             pending_after_file = m.group(1).strip()
             if current:
                 current.path_after = pending_after_file
-                current.path_before = pending_before_file
             pending_after_range = None
             continue
 
-        # Hunk header
+        # Hunk header: @@
         m = re.match(r"^@@ -(\d+(?:,\d+)?) \+(\d+(?:,\d+)?) @@", line)
         if m:
             _commit_hunk()
+            if current and not current.path_after:
+                current.path_after = pending_after_file
             b_start, a_start = _parse_range(line)
             pending_before_range = (b_start, a_start)
             pending_after_range = (a_start, a_start)
@@ -144,9 +149,12 @@ def parse_diff(text: str) -> list[DiffFile]:
         if current and (line.startswith("Binary files") or line.startswith("\\ No newline")):
             continue
 
+    _commit_hunk()
     if current:
-        _commit_hunk()
-        files.append(current)
+        if not current.path_after:
+            current.path_after = pending_after_file
+        if current.hunks:
+            files.append(current)
 
     return files
 

@@ -1,5 +1,4 @@
 """Test consensus / dedup logic."""
-import pytest
 from release_ready.consensus import dedup_findings
 from release_ready.specialists import Finding
 
@@ -20,7 +19,7 @@ def test_dedup_bumps_severity():
     result = dedup_findings(findings)
     assert len(result) == 1
     assert result[0].specialist == "consensus"
-    assert result[0].severity == "critical"  # medium -> critical (one rung up)
+    assert result[0].severity == "high"  # medium -> high (one rung up)
 
 
 def test_dedup_different_lines():

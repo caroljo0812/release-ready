@@ -1,8 +1,7 @@
 """Test the orchestrator with mock provider."""
 import os
-import pytest
+
 from release_ready.orchestrator import review_diff
-from release_ready.diff import parse_diff
 
 # Sample diff for testing
 SAMPLE_DIFF = """--- a/src/api.py

@@ -1,20 +1,17 @@
 """FastAPI server with auth and size limits."""
 from __future__ import annotations
 
-import json
 import os
-import time
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from release_ready.llm import LLMConfig, DEFAULT_MODEL, DEFAULT_PROVIDER
+from release_ready.llm import LLMConfig
 from release_ready.orchestrator import render_markdown, render_text, review_diff
-from release_ready.sources import diff_from_file, diff_from_github, post_github_comment
+from release_ready.sources import diff_from_github, post_github_comment
 
 app = FastAPI(title="Release Ready", version="0.1.0")
 app.add_middleware(
@@ -141,7 +138,7 @@ def review_github_endpoint(
 
     title = meta.get("title", f"PR #{pr_number}")
     body = render_markdown(result) if output == "markdown" else render_text(result)
-    body += f"\n\n_Submitted by Release Ready via GitHub Actions_"
+    body += "\n\n_Submitted by Release Ready via GitHub Actions_"
 
     if post_comment and token:
         post_github_comment(owner, repo, pr_number, body, token)

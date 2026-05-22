@@ -1,12 +1,9 @@
 """Deduplicate findings, merge severity, write the final report."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
 from release_ready.diff import DiffFile
 from release_ready.llm import LLMResponse, chat
 from release_ready.specialists import Finding
-
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 

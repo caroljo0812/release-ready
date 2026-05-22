@@ -4,15 +4,18 @@ from __future__ import annotations
 import json
 import os
 import sys
-import time
-from pathlib import Path
 
 import click
 
-from release_ready.diff import parse_diff
 from release_ready.llm import LLMConfig
 from release_ready.orchestrator import render_markdown, render_text, review_diff
-from release_ready.sources import diff_from_file, diff_from_github, diff_from_repo, diff_from_stdin, post_github_comment
+from release_ready.sources import (
+    diff_from_file,
+    diff_from_github,
+    diff_from_repo,
+    diff_from_stdin,
+    post_github_comment,
+)
 
 
 @click.group()
